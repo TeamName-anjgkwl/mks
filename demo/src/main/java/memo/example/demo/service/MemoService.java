@@ -1,7 +1,10 @@
 package memo.example.demo.service;
 
 import lombok.RequiredArgsConstructor;
-import memo.example.demo.controller.MemoController.*;
+import memo.example.demo.DTO.request.MemoRequestDto;
+import memo.example.demo.DTO.request.MemoUpdateRequestDto;
+import memo.example.demo.DTO.response.MemoResponseDto;
+import memo.example.demo.DTO.response.TrashResponseDto;
 import memo.example.demo.domain.Memo;
 import memo.example.demo.domain.Memo.MemoStatus;
 import memo.example.demo.domain.TeamSpace;
@@ -20,55 +23,67 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional
 public class MemoService {
-
     private final MemoRepository memoRepository;
     private final UserRepository userRepository;
     private final TeamSpaceRepository teamSpaceRepository;
 
-    public void createMemo(Long userId, MemoCreateRequest request) {
+    public void createMemo(Long userId, MemoRequestDto request) {
         User user = userRepository.findById(userId).orElseThrow();
-        TeamSpace teamSpace = request.teamSpaceId() != null ?
-                teamSpaceRepository.findById(request.teamSpaceId()).orElse(null) : null;
+        TeamSpace teamSpace = request.getTeamSpaceId() != null ?
+                teamSpaceRepository.findById(request.getTeamSpaceId()).orElse(null) : null;
 
         Memo memo = Memo.builder()
                 .user(user)
                 .teamSpace(teamSpace)
-                .status(request.status() != null ? MemoStatus.valueOf(request.status()) : MemoStatus.NORMAL)
-                .mTitle(request.title())
-                .mContent(request.content())
-                .expiredAt(request.expiredAt() != null ? LocalDateTime.parse(request.expiredAt()) : null)
+                .status(request.getStatus() != null ? MemoStatus.valueOf(request.getStatus()) : MemoStatus.NORMAL)
+                .mTitle(request.getTitle())
+                .mContent(request.getContent())
+                .expiredAt(request.getExpiredAt() != null ? LocalDateTime.parse(request.getExpiredAt()) : null)
                 .build();
-
         memoRepository.save(memo);
     }
 
     @Transactional(readOnly = true)
-    public List<MemoListResponse> getUserMemos(Long userId) {
+    public List<MemoResponseDto> getUserMemos(Long userId) {
         return memoRepository.findByUser_UserIdAndTeamSpaceIsNull(userId).stream()
-                .map(m -> new MemoListResponse(m.getMemoId(), m.getMTitle(), m.getStatus().name(), m.getIsPinned()))
+                .filter(m -> m.getStatus() != MemoStatus.TRASH) // 휴지통 제외
+                .map(MemoResponseDto::from)
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public List<MemoListResponse> getTeamMemos(Long teamSpaceId) {
+    public List<MemoResponseDto> getTeamMemos(Long teamSpaceId) {
         return memoRepository.findByTeamSpace_TeamSpaceId(teamSpaceId).stream()
-                .map(m -> new MemoListResponse(m.getMemoId(), m.getMTitle(), m.getStatus().name(), m.getIsPinned()))
+                .filter(m -> m.getStatus() != MemoStatus.TRASH)
+                .map(MemoResponseDto::from)
                 .collect(Collectors.toList());
     }
 
-    public void updateMemo(Long memoId, MemoUpdateRequest request) {
-        Memo memo = memoRepository.findById(memoId).orElseThrow();
-        if(request.title() != null) memo.setMTitle(request.title());
-        if(request.content() != null) memo.setMContent(request.content());
+    @Transactional(readOnly = true)
+    public MemoResponseDto getMemoDetail(Long memoId) {
+        Memo memo = memoRepository.findById(memoId).orElseThrow(() -> new IllegalArgumentException("메모가 없습니다."));
+        return MemoResponseDto.from(memo);
     }
 
-    // V10: 명시적인 Status 변경
+    @Transactional(readOnly = true)
+    public List<TrashResponseDto> getTrashList(Long userId) {
+        return memoRepository.findByUser_UserIdAndTeamSpaceIsNull(userId).stream()
+                .filter(m -> m.getStatus() == MemoStatus.TRASH)
+                .map(TrashResponseDto::from)
+                .collect(Collectors.toList());
+    }
+
+    public void updateMemo(Long memoId, MemoUpdateRequestDto request) {
+        Memo memo = memoRepository.findById(memoId).orElseThrow();
+        if(request.getTitle() != null) memo.setMTitle(request.getTitle());
+        if(request.getContent() != null) memo.setMContent(request.getContent());
+    }
+
     public void updateStatus(Long memoId, MemoStatus status) {
         Memo memo = memoRepository.findById(memoId).orElseThrow();
         memo.setStatus(status);
     }
 
-    // V10: 명시적인 핀 상태 변경 (Boolean value 처리)
     public void updatePin(Long memoId, boolean isPinned) {
         Memo memo = memoRepository.findById(memoId).orElseThrow();
         memo.setIsPinned(isPinned);
@@ -78,5 +93,9 @@ public class MemoService {
         Memo memo = memoRepository.findById(memoId).orElseThrow();
         memo.setStatus(MemoStatus.TRASH);
         memo.setDeletedAt(LocalDateTime.now());
+    }
+
+    public void deleteMemosPermanently(List<Long> memoIds) {
+        memoRepository.deleteAllById(memoIds);
     }
 }

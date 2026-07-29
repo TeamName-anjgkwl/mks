@@ -1,8 +1,10 @@
 package memo.example.demo.service;
 
 import lombok.RequiredArgsConstructor;
-import memo.example.demo.controller.TeamSpaceController.TeamSpaceResponse;
+import memo.example.demo.DTO.request.TeamSpaceCreateRequestDto;
+import memo.example.demo.DTO.response.TeamSpaceResponseDto;
 import memo.example.demo.domain.TeamSpace;
+import memo.example.demo.repository.TeamMemberRepository;
 import memo.example.demo.repository.TeamSpaceRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,26 +15,29 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 @Transactional
 public class TeamSpaceService {
-
     private final TeamSpaceRepository teamSpaceRepository;
+    private final TeamMemberRepository teamMemberRepository;
 
-    public void createTeamSpace(String name) {
+    public void createTeamSpace(TeamSpaceCreateRequestDto request) {
         TeamSpace teamSpace = TeamSpace.builder()
-                .name(name)
+                .name(request.getName())
                 .build();
         teamSpaceRepository.save(teamSpace);
     }
 
     @Transactional(readOnly = true)
-    public TeamSpaceResponse getTeamSpace(Long teamSpaceId) {
+    public TeamSpaceResponseDto getTeamSpace(Long teamSpaceId) {
         TeamSpace teamSpace = teamSpaceRepository.findById(teamSpaceId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 팀 스페이스입니다."));
-        return new TeamSpaceResponse(teamSpace.getTeamSpaceId(), teamSpace.getName(), teamSpace.getCreatedAt().toString());
+                .orElseThrow(() -> new IllegalArgumentException("팀 공간을 찾을 수 없습니다."));
+
+        // 해당 팀스페이스의 멤버 수 카운트
+        Integer memberCount = teamMemberRepository.findByTeamSpace_TeamSpaceId(teamSpaceId).size();
+        return TeamSpaceResponseDto.from(teamSpace, memberCount);
     }
 
     public void deleteTeamSpace(Long teamSpaceId) {
         TeamSpace teamSpace = teamSpaceRepository.findById(teamSpaceId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 팀 스페이스입니다."));
-        teamSpace.setDeletedAt(LocalDateTime.now()); // Soft Delete
+                .orElseThrow(() -> new IllegalArgumentException("팀 공간을 찾을 수 없습니다."));
+        teamSpace.setDeletedAt(LocalDateTime.now());
     }
 }

@@ -1,38 +1,32 @@
 package memo.example.demo.controller;
 
 import lombok.RequiredArgsConstructor;
+import memo.example.demo.DTO.response.MessageResponseDto;
 import memo.example.demo.service.NotificationService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/notifications")
 @RequiredArgsConstructor
 public class NotificationController {
-
     private final NotificationService notificationService;
+    private final Long CURRENT_USER_ID = 1L; // 임시 유저 ID
 
     @GetMapping
     public ResponseEntity<?> getNotifications() {
-        return ResponseEntity.ok(List.of(new NotificationResponse(1L, "MEMO", 123L, "알림 메시지", false)));
+        return ResponseEntity.ok(notificationService.getUserNotifications(CURRENT_USER_ID));
     }
 
-    // V10: 명시적인 /read 경로 확정
     @PatchMapping("/{id}/read")
-    public ResponseEntity<?> readNotification(@PathVariable Long id) {
+    public ResponseEntity<MessageResponseDto> readNotification(@PathVariable Long id) {
         notificationService.markAsRead(id);
-        return ResponseEntity.ok(new MessageResponse("처리 완료"));
+        return ResponseEntity.ok(new MessageResponseDto("알림 읽음 처리 완료"));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteNotification(@PathVariable Long id) {
+    public ResponseEntity<MessageResponseDto> deleteNotification(@PathVariable Long id) {
         notificationService.deleteNotification(id);
-        return ResponseEntity.ok(new MessageResponse("처리 완료"));
+        return ResponseEntity.ok(new MessageResponseDto("알림 삭제 완료"));
     }
-
-    // --- DTOs ---
-    public record NotificationResponse(Long notificationId, String type, Long targetId, String message, Boolean isRead) {}
-    public record MessageResponse(String message) {}
 }

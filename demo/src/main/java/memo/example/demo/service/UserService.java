@@ -1,7 +1,11 @@
 package memo.example.demo.service;
 
 import lombok.RequiredArgsConstructor;
-import memo.example.demo.controller.UserController.*;
+import memo.example.demo.DTO.request.SignUpRequestDto;
+import memo.example.demo.DTO.request.UserProfileUpdateRequestDto;
+import memo.example.demo.DTO.request.UserSettingsUpdateRequestDto;
+import memo.example.demo.DTO.response.UserProfileResponseDto;
+import memo.example.demo.DTO.response.UserSettingsResponseDto;
 import memo.example.demo.domain.User;
 import memo.example.demo.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -13,51 +17,53 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 @Transactional
 public class UserService {
-
     private final UserRepository userRepository;
 
-    // V10: name, phoneNumber 추가 반영
-    public void createUser(UserCreateRequest request) {
+    public void createUser(SignUpRequestDto request) {
         User user = User.builder()
-                .loginId(request.loginId())
-                .email(request.email())
-                .password(request.password())
-                .name(request.name())
-                .nickname(request.nickname())
-                .phoneNumber(request.phoneNumber())
-                .provider(request.provider())
+                .loginId(request.getLoginId())
+                .email(request.getEmail())
+                .password(request.getPassword())
+                .name(request.getName())
+                .nickname(request.getNickname())
+                .phoneNumber(request.getPhoneNumber())
+                .provider(request.getProvider())
                 .build();
         userRepository.save(user);
     }
 
     @Transactional(readOnly = true)
-    public UserProfileResponse getUser(Long userId) {
+    public UserProfileResponseDto getUserProfile(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
-        return new UserProfileResponse(user.getUserId(), user.getNickname(), user.getEmail(), user.getProfileImageUrl());
+        return UserProfileResponseDto.from(user);
     }
 
-    public void updateUserProfile(Long userId, UserProfileUpdateRequest request) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
-
-        if (request.nickname() != null) user.setNickname(request.nickname());
-        if (request.profileImageUrl() != null) user.setProfileImageUrl(request.profileImageUrl());
+    public void updateUserProfile(Long userId, UserProfileUpdateRequestDto request) {
+        User user = userRepository.findById(userId).orElseThrow();
+        if (request.getNickname() != null) user.setNickname(request.getNickname());
+        if (request.getProfileImageUrl() != null) user.setProfileImageUrl(request.getProfileImageUrl());
     }
 
-    // V10: 사용자 설정 업데이트 (timezone, use2fa 등 추가)
-    public void updateUserSettings(Long userId, UserSettingsResponse request) {
+    @Transactional(readOnly = true)
+    public UserSettingsResponseDto getUserSettings(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+        return UserSettingsResponseDto.from(user);
+    }
 
-        if (request.timezone() != null) user.setTimezone(request.timezone());
-        if (request.allowPush() != null) user.setAllowPush(request.allowPush());
-        // 추가 설정 항목 매핑 필요시 여기에 작성 (dateFormat, language, use2fa, allowEvent 등)
+    public void updateUserSettings(Long userId, UserSettingsUpdateRequestDto request) {
+        User user = userRepository.findById(userId).orElseThrow();
+        if (request.getTimezone() != null) user.setTimezone(request.getTimezone());
+        if (request.getDateFormat() != null) user.setDateFormat(request.getDateFormat());
+        if (request.getLanguage() != null) user.setLanguage(request.getLanguage());
+        if (request.getUse2fa() != null) user.setUse2fa(request.getUse2fa());
+        if (request.getAllowPush() != null) user.setAllowPush(request.getAllowPush());
+        if (request.getAllowEvent() != null) user.setAllowEvent(request.getAllowEvent());
     }
 
     public void deleteUser(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
-        user.setDeletedAt(LocalDateTime.now()); // Soft Delete
+        User user = userRepository.findById(userId).orElseThrow();
+        user.setDeletedAt(LocalDateTime.now());
     }
 }

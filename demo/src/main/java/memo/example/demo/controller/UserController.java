@@ -1,6 +1,10 @@
 package memo.example.demo.controller;
 
 import lombok.RequiredArgsConstructor;
+import memo.example.demo.DTO.request.UserProfileUpdateRequestDto;
+import memo.example.demo.DTO.request.UserSettingsUpdateRequestDto;
+import memo.example.demo.DTO.response.MessageResponseDto;
+import memo.example.demo.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -8,40 +12,34 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
 public class UserController {
-
-    // private final UserService userService;
+    private final UserService userService;
+    private final Long CURRENT_USER_ID = 1L; // 임시 유저 ID
 
     @GetMapping("/me")
     public ResponseEntity<?> getMyProfile() {
-        return ResponseEntity.ok(new UserProfileResponse(1L, "nickname", "email@test.com", "url"));
+        return ResponseEntity.ok(userService.getUserProfile(CURRENT_USER_ID));
     }
 
     @PatchMapping("/me")
-    public ResponseEntity<?> updateMyProfile(@RequestBody UserProfileUpdateRequest request) {
-        return ResponseEntity.ok(new UserProfileResponse(1L, request.nickname(), "email@test.com", request.profileImageUrl()));
+    public ResponseEntity<MessageResponseDto> updateMyProfile(@RequestBody UserProfileUpdateRequestDto request) {
+        userService.updateUserProfile(CURRENT_USER_ID, request);
+        return ResponseEntity.ok(new MessageResponseDto("프로필 업데이트 완료"));
     }
 
     @GetMapping("/me/settings")
     public ResponseEntity<?> getMySettings() {
-        return ResponseEntity.ok(new UserSettingsResponse("Asia/Seoul", "YYYY-MM-DD", "ko-KR", false, true, false));
+        return ResponseEntity.ok(userService.getUserSettings(CURRENT_USER_ID));
     }
 
     @PatchMapping("/me/settings")
-    public ResponseEntity<?> updateMySettings(@RequestBody UserSettingsResponse request) {
-        // userService.updateUserSettings(userId, request);
-        return ResponseEntity.ok(request);
+    public ResponseEntity<MessageResponseDto> updateMySettings(@RequestBody UserSettingsUpdateRequestDto request) {
+        userService.updateUserSettings(CURRENT_USER_ID, request);
+        return ResponseEntity.ok(new MessageResponseDto("설정 업데이트 완료"));
     }
 
     @DeleteMapping("/me")
-    public ResponseEntity<?> withdrawUser() {
-        return ResponseEntity.ok(new MessageResponse("탈퇴 처리 완료"));
+    public ResponseEntity<MessageResponseDto> withdrawUser() {
+        userService.deleteUser(CURRENT_USER_ID);
+        return ResponseEntity.ok(new MessageResponseDto("탈퇴 처리 완료"));
     }
-
-    // --- DTOs ---
-    public record UserProfileResponse(Long userId, String nickname, String email, String profileImageUrl) {}
-    public record UserProfileUpdateRequest(String nickname, String profileImageUrl) {}
-
-    // V10: 전체 설정 필드 반영
-    public record UserSettingsResponse(String timezone, String dateFormat, String language, Boolean use2fa, Boolean allowPush, Boolean allowEvent) {}
-    public record MessageResponse(String message) {}
 }

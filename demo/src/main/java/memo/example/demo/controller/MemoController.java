@@ -1,90 +1,81 @@
 package memo.example.demo.controller;
 
 import lombok.RequiredArgsConstructor;
+import memo.example.demo.DTO.request.DeleteTrashRequestDto;
+import memo.example.demo.DTO.request.MemoRequestDto;
+import memo.example.demo.DTO.request.MemoUpdateRequestDto;
+import memo.example.demo.DTO.response.MessageResponseDto;
 import memo.example.demo.domain.Memo.MemoStatus;
 import memo.example.demo.service.MemoService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
 public class MemoController {
-
     private final MemoService memoService;
+    private final Long CURRENT_USER_ID = 1L; // 임시
 
     @PostMapping("/memos")
-    public ResponseEntity<?> createMemo(@RequestBody MemoCreateRequest request) {
-        // memoService.createMemo(userId, request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(new MemoIdResponse(1L));
+    public ResponseEntity<MessageResponseDto> createMemo(@RequestBody MemoRequestDto request) {
+        memoService.createMemo(CURRENT_USER_ID, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(new MessageResponseDto("메모 생성 완료"));
     }
 
     @GetMapping("/memos")
     public ResponseEntity<?> getMemos(@RequestParam(name = "teamSpaceId", required = false) Long teamSpaceId) {
-        return ResponseEntity.ok(List.of(new MemoListResponse(1L, "title", "NORMAL", false)));
+        if (teamSpaceId != null) {
+            return ResponseEntity.ok(memoService.getTeamMemos(teamSpaceId));
+        }
+        return ResponseEntity.ok(memoService.getUserMemos(CURRENT_USER_ID));
     }
 
     @GetMapping("/memos/{memoId}")
     public ResponseEntity<?> getMemoDetail(@PathVariable Long memoId) {
-        return ResponseEntity.ok(new MemoDetailResponse(memoId, "title", "content", "NORMAL"));
+        return ResponseEntity.ok(memoService.getMemoDetail(memoId));
     }
 
     @PatchMapping("/memos/{memoId}")
-    public ResponseEntity<?> updateMemo(@PathVariable Long memoId, @RequestBody MemoUpdateRequest request) {
+    public ResponseEntity<MessageResponseDto> updateMemo(@PathVariable Long memoId, @RequestBody MemoUpdateRequestDto request) {
         memoService.updateMemo(memoId, request);
-        return ResponseEntity.ok(new MessageResponse("처리 완료"));
+        return ResponseEntity.ok(new MessageResponseDto("메모 수정 완료"));
     }
 
     @DeleteMapping("/memos/{memoId}")
-    public ResponseEntity<?> moveMemoToTrash(@PathVariable Long memoId) {
+    public ResponseEntity<MessageResponseDto> moveMemoToTrash(@PathVariable Long memoId) {
         memoService.moveMemoToTrash(memoId);
-        return ResponseEntity.ok(new MessageResponse("처리 완료"));
+        return ResponseEntity.ok(new MessageResponseDto("휴지통 이동 완료"));
     }
 
-    // V10: PIN과 STATUS 분기 및 타입(value) 명확화
     @PatchMapping("/memos/{memoId}/status")
-    public ResponseEntity<?> changeMemoStatus(
+    public ResponseEntity<MessageResponseDto> changeMemoStatus(
             @PathVariable Long memoId,
             @RequestParam(name = "action") String action,
             @RequestParam(name = "value") String value) {
-
         if ("PIN".equalsIgnoreCase(action)) {
-            boolean isPinned = Boolean.parseBoolean(value);
-            memoService.updatePin(memoId, isPinned);
+            memoService.updatePin(memoId, Boolean.parseBoolean(value));
         } else if ("STATUS".equalsIgnoreCase(action)) {
-            MemoStatus status = MemoStatus.valueOf(value.toUpperCase());
-            memoService.updateStatus(memoId, status);
+            memoService.updateStatus(memoId, MemoStatus.valueOf(value.toUpperCase()));
         }
-
-        return ResponseEntity.ok(new MessageResponse("변경 완료"));
+        return ResponseEntity.ok(new MessageResponseDto("상태 변경 완료"));
     }
 
     @GetMapping("/trash")
     public ResponseEntity<?> getTrashList() {
-        return ResponseEntity.ok(List.of(new TrashResponse(1L, "title", "2026-07-23T12:00:00")));
+        return ResponseEntity.ok(memoService.getTrashList(CURRENT_USER_ID));
     }
 
     @PatchMapping("/trash/{memoId}/restore")
-    public ResponseEntity<?> restoreMemo(@PathVariable Long memoId) {
-        return ResponseEntity.ok(new MessageResponse("복구 완료"));
+    public ResponseEntity<MessageResponseDto> restoreMemo(@PathVariable Long memoId) {
+        memoService.updateStatus(memoId, MemoStatus.NORMAL); // 휴지통에서 복구
+        return ResponseEntity.ok(new MessageResponseDto("메모 복구 완료"));
     }
 
     @DeleteMapping("/trash")
-    public ResponseEntity<?> deleteMemosPermanently(@RequestBody DeleteTrashRequest request) {
-        return ResponseEntity.ok(new MessageResponse("영구 삭제 완료"));
+    public ResponseEntity<MessageResponseDto> deleteMemosPermanently(@RequestBody DeleteTrashRequestDto request) {
+        memoService.deleteMemosPermanently(request.getMemoIds());
+        return ResponseEntity.ok(new MessageResponseDto("영구 삭제 완료"));
     }
-
-    // --- DTOs ---
-    // V10: expiredAt 추가
-    public record MemoCreateRequest(Long teamSpaceId, String title, String content, String expiredAt, String status) {}
-    public record MemoIdResponse(Long memoId) {}
-    public record MemoListResponse(Long memoId, String title, String status, Boolean isPinned) {}
-    public record MemoDetailResponse(Long memoId, String title, String content, String status) {}
-    public record MemoUpdateRequest(String title, String content) {}
-    public record MessageResponse(String message) {}
-    public record TrashResponse(Long memoId, String title, String deletedAt) {}
-    public record DeleteTrashRequest(List<Long> memoIds) {}
 }

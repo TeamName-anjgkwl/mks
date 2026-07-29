@@ -1,7 +1,7 @@
 package memo.example.demo.service;
 
 import lombok.RequiredArgsConstructor;
-import memo.example.demo.controller.InquiryController.InquiryRequest;
+import memo.example.demo.DTO.request.InquiryRequestDto;
 import memo.example.demo.DTO.response.InquiryResponseDto;
 import memo.example.demo.domain.Inquiry;
 import memo.example.demo.domain.Inquiry.InquiryType;
@@ -18,23 +18,20 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional
 public class InquiryService {
-
     private final InquiryRepository inquiryRepository;
     private final UserRepository userRepository;
 
-    // V10: attachmentUrl 추가 반영
-    public void createInquiry(Long userId, InquiryRequest request) {
+    public void createInquiry(Long userId, InquiryRequestDto request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
         Inquiry inquiry = Inquiry.builder()
                 .user(user)
-                .type(InquiryType.valueOf(request.type()))
-                .title(request.title())
-                .content(request.content())
-                .attachmentUrl(request.attachmentUrl()) // S3 첨부파일 반영
+                .type(InquiryType.valueOf(request.getType()))
+                .title(request.getTitle())
+                .content(request.getContent())
+                .attachmentUrl(request.getAttachmentUrl())
                 .build();
-
         inquiryRepository.save(inquiry);
     }
 

@@ -1,7 +1,8 @@
 package memo.example.demo.service;
 
 import lombok.RequiredArgsConstructor;
-import memo.example.demo.controller.ScheduleController.*;
+import memo.example.demo.DTO.request.ScheduleRequestDto;
+import memo.example.demo.DTO.response.ScheduleResponseDto;
 import memo.example.demo.domain.Schedule;
 import memo.example.demo.domain.TeamSpace;
 import memo.example.demo.domain.User;
@@ -19,56 +20,54 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional
 public class ScheduleService {
-
     private final ScheduleRepository scheduleRepository;
     private final UserRepository userRepository;
     private final TeamSpaceRepository teamSpaceRepository;
 
-    // V10: startAt, endAt 분리
-    public void createSchedule(Long userId, ScheduleCreateRequest request) {
+    public void createSchedule(Long userId, ScheduleRequestDto request) {
         User user = userRepository.findById(userId).orElseThrow();
-
-        TeamSpace teamSpace = request.teamSpaceId() != null ?
-                teamSpaceRepository.findById(request.teamSpaceId()).orElse(null) : null;
+        TeamSpace teamSpace = request.getTeamSpaceId() != null ?
+                teamSpaceRepository.findById(request.getTeamSpaceId()).orElse(null) : null;
 
         Schedule schedule = Schedule.builder()
                 .user(user)
                 .teamSpace(teamSpace)
-                .sTitle(request.title())
-                .sContent(request.content())
-                .startAt(LocalDateTime.parse(request.startAt()))
-                .endAt(LocalDateTime.parse(request.endAt()))
+                .sTitle(request.getTitle())
+                .sContent(request.getContent())
+                .startAt(LocalDateTime.parse(request.getStartAt()))
+                .endAt(LocalDateTime.parse(request.getEndAt()))
                 .build();
-
         scheduleRepository.save(schedule);
     }
 
+    // 월별 팀 스케줄 조회
     @Transactional(readOnly = true)
-    public List<ScheduleListResponse> getTeamSchedules(Long teamSpaceId) {
-        return scheduleRepository.findByTeamSpace_TeamSpaceId(teamSpaceId).stream()
-                .map(s -> new ScheduleListResponse(
-                        s.getScheduleId(),
-                        s.getSTitle(),
-                        s.getStartAt().toString(),
-                        s.getEndAt().toString()
-                ))
+    public List<ScheduleResponseDto> getTeamSchedulesByMonth(Long teamSpaceId, int year, int month) {
+        return scheduleRepository.findByTeamSpaceAndMonth(teamSpaceId, year, month).stream()
+                .map(ScheduleResponseDto::from)
+                .collect(Collectors.toList());
+    }
+
+    // 월별 개인 스케줄 조회
+    @Transactional(readOnly = true)
+    public List<ScheduleResponseDto> getUserSchedulesByMonth(Long userId, int year, int month) {
+        return scheduleRepository.findByUserAndMonth(userId, year, month).stream()
+                .map(ScheduleResponseDto::from)
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public ScheduleDetailResponse getScheduleDetail(Long scheduleId) {
-        Schedule s = scheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new IllegalArgumentException("일정을 찾을 수 없습니다."));
-
-        return new ScheduleDetailResponse(s.getScheduleId(), s.getSTitle(), s.getSContent(), s.getStartAt().toString(), s.getEndAt().toString());
+    public ScheduleResponseDto getScheduleDetail(Long scheduleId) {
+        Schedule s = scheduleRepository.findById(scheduleId).orElseThrow();
+        return ScheduleResponseDto.from(s);
     }
 
-    public void updateSchedule(Long scheduleId, ScheduleUpdateRequest request) {
+    public void updateSchedule(Long scheduleId, ScheduleRequestDto request) {
         Schedule s = scheduleRepository.findById(scheduleId).orElseThrow();
-        if (request.title() != null) s.setSTitle(request.title());
-        if (request.content() != null) s.setSContent(request.content());
-        if (request.startAt() != null) s.setStartAt(LocalDateTime.parse(request.startAt()));
-        if (request.endAt() != null) s.setEndAt(LocalDateTime.parse(request.endAt()));
+        if (request.getTitle() != null) s.setSTitle(request.getTitle());
+        if (request.getContent() != null) s.setSContent(request.getContent());
+        if (request.getStartAt() != null) s.setStartAt(LocalDateTime.parse(request.getStartAt()));
+        if (request.getEndAt() != null) s.setEndAt(LocalDateTime.parse(request.getEndAt()));
     }
 
     public void deleteSchedule(Long scheduleId) {

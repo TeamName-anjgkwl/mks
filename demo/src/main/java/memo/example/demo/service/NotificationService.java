@@ -1,7 +1,7 @@
 package memo.example.demo.service;
 
 import lombok.RequiredArgsConstructor;
-import memo.example.demo.controller.NotificationController.*;
+import memo.example.demo.DTO.response.NotificationResponseDto;
 import memo.example.demo.domain.Notification;
 import memo.example.demo.repository.NotificationRepository;
 import org.springframework.stereotype.Service;
@@ -14,24 +14,18 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional
 public class NotificationService {
-
     private final NotificationRepository notificationRepository;
 
     @Transactional(readOnly = true)
-    public List<NotificationResponse> getUserNotifications(Long userId) {
+    public List<NotificationResponseDto> getUserNotifications(Long userId) {
         return notificationRepository.findByUser_UserIdOrderByCreatedAtDesc(userId).stream()
-                .map(n -> new NotificationResponse(
-                        n.getNotificationId(),
-                        n.getMessage(),
-                        n.getIsRead(),
-                        n.getCreatedAt().toString()
-                ))
+                .map(NotificationResponseDto::from)
                 .collect(Collectors.toList());
     }
 
     public void markAsRead(Long notificationId) {
         Notification notification = notificationRepository.findById(notificationId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 알림입니다."));
+                .orElseThrow(() -> new IllegalArgumentException("알림을 찾을 수 없습니다."));
         notification.setIsRead(true);
     }
 
