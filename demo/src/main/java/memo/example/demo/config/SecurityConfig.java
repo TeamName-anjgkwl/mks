@@ -33,15 +33,15 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.configurationSource(corsConfigurationSource()))
+                // 람다식을 명확하게 수정하여 Cannot find symbol 오류 해결
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
-                .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // 비인증 접근 허용 (회원가입, 로그인, 토큰 갱신, 비밀번호 찾기 등)
+                        // 회원가입, 로그인 등 인증 없는 접근 허용
                         .requestMatchers("/api/auth/**", "/api/files/presigned-url", "/api/service-notices/**").permitAll()
-                        // 그 외 모든 API는 JWT 토큰 인증 필요
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

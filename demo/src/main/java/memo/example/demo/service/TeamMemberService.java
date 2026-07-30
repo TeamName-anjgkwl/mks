@@ -1,7 +1,7 @@
 package memo.example.demo.service;
 
 import lombok.RequiredArgsConstructor;
-import memo.example.demo.controller.TeamMemberController.TeamMemberResponse;
+import memo.example.demo.DTO.response.TeamMemberResponseDto; // 정식 DTO로 변경!
 import memo.example.demo.domain.TeamMember;
 import memo.example.demo.domain.TeamMember.Role;
 import memo.example.demo.domain.TeamSpace;
@@ -27,7 +27,6 @@ public class TeamMemberService {
     public void addMember(Long teamSpaceId, Long userId, Role role) {
         TeamSpace teamSpace = teamSpaceRepository.findById(teamSpaceId).orElseThrow();
         User user = userRepository.findById(userId).orElseThrow();
-
         TeamMember teamMember = TeamMember.builder()
                 .teamSpace(teamSpace)
                 .user(user)
@@ -37,10 +36,10 @@ public class TeamMemberService {
     }
 
     @Transactional(readOnly = true)
-    public List<TeamMemberResponse> getTeamMembers(Long teamSpaceId) {
+    public List<TeamMemberResponseDto> getTeamMembers(Long teamSpaceId) {
         return teamMemberRepository.findAll().stream()
                 .filter(tm -> tm.getTeamSpace().getTeamSpaceId().equals(teamSpaceId))
-                .map(tm -> new TeamMemberResponse(tm.getTeamMemberId(), tm.getUser().getUserId(), tm.getUser().getNickname(), tm.getRole(), tm.getJoinedAt().toString()))
+                .map(TeamMemberResponseDto::from) // 빌더 패턴 정식 DTO 매핑으로 에러 해결
                 .collect(Collectors.toList());
     }
 

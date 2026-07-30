@@ -1,7 +1,7 @@
 package memo.example.demo.service;
 
 import lombok.RequiredArgsConstructor;
-import memo.example.demo.controller.FriendController.FriendResponseDto;
+import memo.example.demo.DTO.response.FriendRequestResponseDto; // 정식 DTO로 임포트 변경!
 import memo.example.demo.domain.Friend;
 import memo.example.demo.domain.Friend.FriendStatus;
 import memo.example.demo.domain.User;
@@ -17,14 +17,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional
 public class FriendService {
-
     private final FriendRepository friendRepository;
     private final UserRepository userRepository;
 
     public void sendFriendRequest(Long requesterId, Long receiverId) {
         User requester = userRepository.findById(requesterId).orElseThrow();
         User receiver = userRepository.findById(receiverId).orElseThrow();
-
         Friend friend = Friend.builder()
                 .requester(requester)
                 .receiver(receiver)
@@ -34,10 +32,10 @@ public class FriendService {
     }
 
     @Transactional(readOnly = true)
-    public List<FriendResponseDto> getPendingRequests(Long userId) {
+    public List<FriendRequestResponseDto> getPendingRequests(Long userId) {
         return friendRepository.findAll().stream()
                 .filter(f -> f.getReceiver().getUserId().equals(userId) && f.getStatus() == FriendStatus.PENDING)
-                .map(f -> new FriendResponseDto(f.getRequestId(), f.getRequester().getUserId(), f.getRequester().getNickname(), f.getCreatedAt().toString()))
+                .map(f -> FriendRequestResponseDto.from(f, f.getRequester().getNickname()))
                 .collect(Collectors.toList());
     }
 

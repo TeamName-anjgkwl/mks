@@ -5,6 +5,7 @@ import memo.example.demo.DTO.request.DeleteTrashRequestDto;
 import memo.example.demo.DTO.request.MemoRequestDto;
 import memo.example.demo.DTO.request.MemoUpdateRequestDto;
 import memo.example.demo.DTO.response.MessageResponseDto;
+import memo.example.demo.config.jwt.LoginUser; // @LoginUser 임포트
 import memo.example.demo.domain.Memo.MemoStatus;
 import memo.example.demo.service.MemoService;
 import org.springframework.http.HttpStatus;
@@ -16,20 +17,24 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class MemoController {
     private final MemoService memoService;
-    private final Long CURRENT_USER_ID = 1L; // 임시
+    // CURRENT_USER_ID = 1L 하드코딩 완전 제거!
 
     @PostMapping("/memos")
-    public ResponseEntity<MessageResponseDto> createMemo(@RequestBody MemoRequestDto request) {
-        memoService.createMemo(CURRENT_USER_ID, request);
+    public ResponseEntity<MessageResponseDto> createMemo(
+            @LoginUser Long userId,
+            @RequestBody MemoRequestDto request) {
+        memoService.createMemo(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(new MessageResponseDto("메모 생성 완료"));
     }
 
     @GetMapping("/memos")
-    public ResponseEntity<?> getMemos(@RequestParam(name = "teamSpaceId", required = false) Long teamSpaceId) {
+    public ResponseEntity<?> getMemos(
+            @LoginUser Long userId,
+            @RequestParam(name = "teamSpaceId", required = false) Long teamSpaceId) {
         if (teamSpaceId != null) {
             return ResponseEntity.ok(memoService.getTeamMemos(teamSpaceId));
         }
-        return ResponseEntity.ok(memoService.getUserMemos(CURRENT_USER_ID));
+        return ResponseEntity.ok(memoService.getUserMemos(userId));
     }
 
     @GetMapping("/memos/{memoId}")
@@ -38,7 +43,9 @@ public class MemoController {
     }
 
     @PatchMapping("/memos/{memoId}")
-    public ResponseEntity<MessageResponseDto> updateMemo(@PathVariable Long memoId, @RequestBody MemoUpdateRequestDto request) {
+    public ResponseEntity<MessageResponseDto> updateMemo(
+            @PathVariable Long memoId,
+            @RequestBody MemoUpdateRequestDto request) {
         memoService.updateMemo(memoId, request);
         return ResponseEntity.ok(new MessageResponseDto("메모 수정 완료"));
     }
@@ -63,13 +70,13 @@ public class MemoController {
     }
 
     @GetMapping("/trash")
-    public ResponseEntity<?> getTrashList() {
-        return ResponseEntity.ok(memoService.getTrashList(CURRENT_USER_ID));
+    public ResponseEntity<?> getTrashList(@LoginUser Long userId) {
+        return ResponseEntity.ok(memoService.getTrashList(userId));
     }
 
     @PatchMapping("/trash/{memoId}/restore")
     public ResponseEntity<MessageResponseDto> restoreMemo(@PathVariable Long memoId) {
-        memoService.updateStatus(memoId, MemoStatus.NORMAL); // 휴지통에서 복구
+        memoService.updateStatus(memoId, MemoStatus.NORMAL);
         return ResponseEntity.ok(new MessageResponseDto("메모 복구 완료"));
     }
 
