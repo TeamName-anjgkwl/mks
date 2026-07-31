@@ -31,14 +31,13 @@ public class MemoService {
         User user = userRepository.findById(userId).orElseThrow();
         TeamSpace teamSpace = request.getTeamSpaceId() != null ?
                 teamSpaceRepository.findById(request.getTeamSpaceId()).orElse(null) : null;
-
         Memo memo = Memo.builder()
                 .user(user)
                 .teamSpace(teamSpace)
                 .status(request.getStatus() != null ? MemoStatus.valueOf(request.getStatus()) : MemoStatus.NORMAL)
                 .mTitle(request.getTitle())
                 .mContent(request.getContent())
-                .expiredAt(request.getExpiredAt() != null ? LocalDateTime.parse(request.getExpiredAt()) : null)
+                .expiredAt(parseDateTimeSafe(request.getExpiredAt())) // ★ 안전한 파싱 적용
                 .build();
         memoRepository.save(memo);
     }
@@ -46,7 +45,7 @@ public class MemoService {
     @Transactional(readOnly = true)
     public List<MemoResponseDto> getUserMemos(Long userId) {
         return memoRepository.findByUser_UserIdAndTeamSpaceIsNull(userId).stream()
-                .filter(m -> m.getStatus() != MemoStatus.TRASH) // 휴지통 제외
+                .filter(m -> m.getStatus() != MemoStatus.TRASH)
                 .map(MemoResponseDto::from)
                 .collect(Collectors.toList());
     }
@@ -61,7 +60,7 @@ public class MemoService {
 
     @Transactional(readOnly = true)
     public MemoResponseDto getMemoDetail(Long memoId) {
-        Memo memo = memoRepository.findById(memoId).orElseThrow(() -> new IllegalArgumentException("메모가 없습니다."));
+        Memo memo = memoRepository.findById(memoId).orElseThrow(() -> new IllegalArgumentException("메모를 찾을 수 없습니다."));
         return MemoResponseDto.from(memo);
     }
 
@@ -97,5 +96,12 @@ public class MemoService {
 
     public void deleteMemosPermanently(List<Long> memoIds) {
         memoRepository.deleteAllById(memoIds);
+    }
+
+    // ★ 프론트엔드 ISO-8601 방어용 파싱 유틸 메서드
+    private LocalDateTime parseDateTimeSafe(String dateTimeStr) {
+        if (dateTimeStr == null || dateTimeStr.isBlank()) return null;
+        String cleaned = dateTimeStr.length() >= 19 ? dateTimeStr.substring(0, 19) : dateTimeStr;
+        return LocalDateTime.parse(cleaned);
     }
 }

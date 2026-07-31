@@ -21,13 +21,11 @@ public class GlobalExceptionHandler {
             String errorMessage = error.getDefaultMessage();
             errors.put(fieldName, errorMessage);
         });
-
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .code("INVALID_INPUT_VALUE")
                 .message("입력값이 올바르지 않습니다.")
                 .fieldErrors(errors)
                 .build();
-
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
@@ -53,6 +51,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleAllExceptions(Exception ex) {
+        // ★ EC2 서버 콘솔에 실제 에러 원인 출력
+        ex.printStackTrace();
+
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .code("INTERNAL_SERVER_ERROR")
                 .message("서버 내부 오류가 발생했습니다.")

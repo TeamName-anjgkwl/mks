@@ -6,11 +6,7 @@ import memo.example.demo.DTO.response.ScheduleResponseDto;
 import memo.example.demo.domain.Schedule;
 import memo.example.demo.domain.TeamSpace;
 import memo.example.demo.domain.User;
-import memo.example.demo.repository.ScheduleRepository;
-import memo.example.demo.repository.TeamSpaceRepository;
-import memo.example.demo.repository.UserRepository;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import memo.example.demo.repository.ScheduleRepository; import memo.example.demo.repository.TeamSpaceRepository; import memo.example.demo.repository.UserRepository; import org.springframework.stereotype.Service; import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,19 +24,17 @@ public class ScheduleService {
         User user = userRepository.findById(userId).orElseThrow();
         TeamSpace teamSpace = request.getTeamSpaceId() != null ?
                 teamSpaceRepository.findById(request.getTeamSpaceId()).orElse(null) : null;
-
         Schedule schedule = Schedule.builder()
                 .user(user)
                 .teamSpace(teamSpace)
                 .sTitle(request.getTitle())
                 .sContent(request.getContent())
-                .startAt(LocalDateTime.parse(request.getStartAt()))
-                .endAt(LocalDateTime.parse(request.getEndAt()))
+                .startAt(parseDateTimeSafe(request.getStartAt())) // ★ 안전한 파싱 적용
+                .endAt(parseDateTimeSafe(request.getEndAt()))     // ★ 안전한 파싱 적용
                 .build();
         scheduleRepository.save(schedule);
     }
 
-    // 월별 팀 스케줄 조회
     @Transactional(readOnly = true)
     public List<ScheduleResponseDto> getTeamSchedulesByMonth(Long teamSpaceId, int year, int month) {
         return scheduleRepository.findByTeamSpaceAndMonth(teamSpaceId, year, month).stream()
@@ -48,7 +42,6 @@ public class ScheduleService {
                 .collect(Collectors.toList());
     }
 
-    // 월별 개인 스케줄 조회
     @Transactional(readOnly = true)
     public List<ScheduleResponseDto> getUserSchedulesByMonth(Long userId, int year, int month) {
         return scheduleRepository.findByUserAndMonth(userId, year, month).stream()
@@ -66,11 +59,18 @@ public class ScheduleService {
         Schedule s = scheduleRepository.findById(scheduleId).orElseThrow();
         if (request.getTitle() != null) s.setSTitle(request.getTitle());
         if (request.getContent() != null) s.setSContent(request.getContent());
-        if (request.getStartAt() != null) s.setStartAt(LocalDateTime.parse(request.getStartAt()));
-        if (request.getEndAt() != null) s.setEndAt(LocalDateTime.parse(request.getEndAt()));
+        if (request.getStartAt() != null) s.setStartAt(parseDateTimeSafe(request.getStartAt()));
+        if (request.getEndAt() != null) s.setEndAt(parseDateTimeSafe(request.getEndAt()));
     }
 
     public void deleteSchedule(Long scheduleId) {
         scheduleRepository.deleteById(scheduleId);
+    }
+
+    // ★ 프론트엔드 ISO-8601 방어용 파싱 유틸 메서드
+    private LocalDateTime parseDateTimeSafe(String dateTimeStr) {
+        if (dateTimeStr == null || dateTimeStr.isBlank()) return null;
+        String cleaned = dateTimeStr.length() >= 19 ? dateTimeStr.substring(0, 19) : dateTimeStr;
+        return LocalDateTime.parse(cleaned);
     }
 }
