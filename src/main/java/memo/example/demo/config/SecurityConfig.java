@@ -49,13 +49,18 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("*"));
+        // 프론트엔드 로컬, EC2 IP, 모바일 등 모든 접근 허용
+        configuration.setAllowedOriginPatterns(List.of(
+                "http://localhost:*",
+                "http://13.124.250.181:*",
+                "https://13.124.250.181:*",
+                "*"
+        ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
-
-        // ★ 프론트엔드에서 Authorization 헤더를 읽을 수 있도록 허용
+        configuration.setAllowCredentials(true); // 헤더 토큰 전달 허용
         configuration.setExposedHeaders(List.of("Authorization", "Refresh-Token"));
+        configuration.setMaxAge(3600L); // Preflight 요청 캐싱 (1시간)
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

@@ -7,18 +7,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
-    // private final AuthService authService;
 
     @PostMapping("/signup")
     public ResponseEntity<?> signup(@RequestBody SignUpRequestDto request) {
-        // authService.signup(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("userId", 1L));
     }
 
@@ -39,19 +36,7 @@ public class AuthController {
 
     @PostMapping("/logout")
     public ResponseEntity<MessageResponseDto> logout(@RequestParam(name = "type", defaultValue = "CURRENT") String type) {
-        return ResponseEntity.ok(new MessageResponseDto("로그아웃 완료"));
-    }
-
-    @GetMapping("/devices")
-    public ResponseEntity<?> getDevices() {
-        return ResponseEntity.ok(List.of(
-                DeviceResponseDto.builder().deviceId(1L).deviceName("iPhone 16 Pro").build()
-        ));
-    }
-
-    @DeleteMapping("/devices/{deviceId}")
-    public ResponseEntity<MessageResponseDto> logoutDevice(@PathVariable Long deviceId) {
-        return ResponseEntity.ok(new MessageResponseDto("해당 기기 로그아웃 완료"));
+        return ResponseEntity.ok(new MessageResponseDto("성공적으로 로그아웃 되었습니다."));
     }
 
     @PostMapping("/find")
@@ -66,6 +51,6 @@ public class AuthController {
 
     @PostMapping("/2fa")
     public ResponseEntity<MessageResponseDto> handle2FA(@RequestBody TwoFactorRequestDto request) {
-        return ResponseEntity.ok(new MessageResponseDto("2FA 처리 완료"));
+        return ResponseEntity.ok(new MessageResponseDto("2FA 처리 성공"));
     }
 }
