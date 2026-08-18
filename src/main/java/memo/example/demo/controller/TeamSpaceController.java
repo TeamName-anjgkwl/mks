@@ -2,6 +2,7 @@ package memo.example.demo.controller;
 
 import lombok.RequiredArgsConstructor;
 import memo.example.demo.DTO.request.TeamSpaceCreateRequestDto;
+import memo.example.demo.DTO.request.TeamSpaceRequestDto;
 import memo.example.demo.DTO.response.MessageResponseDto;
 import memo.example.demo.DTO.response.TeamSpaceResponseDto;
 import memo.example.demo.config.jwt.LoginUser;
@@ -35,6 +36,14 @@ public class TeamSpaceController {
     @GetMapping("/{teamSpaceId}")
     public ResponseEntity<?> getTeamSpaceDetail(@PathVariable Long teamSpaceId) {
         return ResponseEntity.ok(teamSpaceService.getTeamSpace(teamSpaceId));
+    }
+
+    @PatchMapping("/{teamSpaceId}")
+    public ResponseEntity<MessageResponseDto> updateTeamSpace(
+            @PathVariable Long teamSpaceId,
+            @RequestBody TeamSpaceRequestDto request) {
+        teamSpaceService.updateTeamSpaceName(teamSpaceId, request);
+        return ResponseEntity.ok(new MessageResponseDto("팀 스페이스 이름이 수정되었습니다."));
     }
 
     @DeleteMapping("/{teamSpaceId}")

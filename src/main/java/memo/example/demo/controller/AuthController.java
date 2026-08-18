@@ -16,7 +16,6 @@ import java.util.Map;
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
-
     private final AuthService authService;
 
     @PostMapping("/signup")
@@ -44,10 +43,11 @@ public class AuthController {
     public ResponseEntity<MessageResponseDto> logout(
             @LoginUser Long userId,
             @RequestParam(name = "type", defaultValue = "CURRENT") String type,
-            @RequestBody(required = false) Map<String, String> requestBody) {
+            @RequestBody(required = false) LogoutRequestDto request) {
 
-        String refreshToken = requestBody != null ? requestBody.get("refreshToken") : null;
+        String refreshToken = request != null ? request.getRefreshToken() : null;
         authService.logout(userId, type, refreshToken);
+
         return ResponseEntity.ok(new MessageResponseDto("로그아웃 완료"));
     }
 
@@ -67,6 +67,6 @@ public class AuthController {
         if (result instanceof LoginResponseDto) {
             return ResponseEntity.ok(result);
         }
-        return ResponseEntity.ok(new MessageResponseDto("2FA 인증 요청이 정상 처리되었습니다."));
+        return ResponseEntity.ok(new MessageResponseDto("2FA 인증 번호가 전송되었습니다."));
     }
 }

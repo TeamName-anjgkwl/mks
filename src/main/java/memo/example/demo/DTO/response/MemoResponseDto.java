@@ -3,7 +3,12 @@ package memo.example.demo.DTO.response;
 import lombok.Builder;
 import lombok.Getter;
 import memo.example.demo.domain.Memo;
+import memo.example.demo.domain.MemoImage;
+
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Getter
 @Builder
@@ -14,12 +19,19 @@ public class MemoResponseDto {
     private String status;
     private String title;
     private String content;
+    private String richContent;
     private Boolean isPinned;
-    private LocalDateTime expiredAt; // V10 반영: 불 메모 만료 일시
+    private LocalDateTime expiredAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    private List<MemoImageResponseDto> images;
+
     public static MemoResponseDto from(Memo memo) {
+        return from(memo, new ArrayList<>());
+    }
+
+    public static MemoResponseDto from(Memo memo, List<MemoImage> images) {
         return MemoResponseDto.builder()
                 .memoId(memo.getMemoId())
                 .userId(memo.getUser() != null ? memo.getUser().getUserId() : null)
@@ -27,10 +39,17 @@ public class MemoResponseDto {
                 .status(memo.getStatus() != null ? memo.getStatus().name() : null)
                 .title(memo.getMTitle())
                 .content(memo.getMContent())
+                .richContent(memo.getMRichContent())
                 .isPinned(memo.getIsPinned())
                 .expiredAt(memo.getExpiredAt())
                 .createdAt(memo.getCreatedAt())
                 .updatedAt(memo.getUpdatedAt())
+                .images(images != null ? images.stream()
+                        .map(img -> MemoImageResponseDto.builder()
+                                .imageId(img.getImageId())
+                                .imageUrl(img.getImageUrl())
+                                .build())
+                        .collect(Collectors.toList()) : new ArrayList<>())
                 .build();
     }
 }

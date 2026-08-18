@@ -5,8 +5,6 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
-public class MemoUpdateRequestDto {
-    private String title;
-    private String content;
-    private String richContent;
+public class LogoutRequestDto {
+    private String refreshToken;
 }

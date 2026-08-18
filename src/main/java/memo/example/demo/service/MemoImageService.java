@@ -19,14 +19,15 @@ public class MemoImageService {
     private final MemoImageRepository memoImageRepository;
     private final MemoRepository memoRepository;
 
-    public void addImageToMemo(Long memoId, String imageUrl) {
+    public Long addImageToMemo(Long memoId, String imageUrl) {
         Memo memo = memoRepository.findById(memoId)
                 .orElseThrow(() -> new IllegalArgumentException("메모를 찾을 수 없습니다."));
         MemoImage memoImage = MemoImage.builder()
                 .memo(memo)
                 .imageUrl(imageUrl)
                 .build();
-        memoImageRepository.save(memoImage);
+        memoImage = memoImageRepository.save(memoImage);
+        return memoImage.getImageId();
     }
 
     @Transactional(readOnly = true)

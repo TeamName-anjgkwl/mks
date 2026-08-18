@@ -10,12 +10,14 @@ import java.time.LocalDateTime;
 public class TrashResponseDto {
     private Long memoId;
     private String title;
+    private String status;
     private LocalDateTime deletedAt;
 
     public static TrashResponseDto from(Memo memo) {
         return TrashResponseDto.builder()
                 .memoId(memo.getMemoId())
                 .title(memo.getMTitle())
+                .status(memo.getStatus() != null ? memo.getStatus().name() : null)
                 .deletedAt(memo.getDeletedAt())
                 .build();
     }

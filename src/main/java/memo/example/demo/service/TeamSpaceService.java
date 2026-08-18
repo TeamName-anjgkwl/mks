@@ -2,6 +2,7 @@ package memo.example.demo.service;
 
 import lombok.RequiredArgsConstructor;
 import memo.example.demo.DTO.request.TeamSpaceCreateRequestDto;
+import memo.example.demo.DTO.request.TeamSpaceRequestDto;
 import memo.example.demo.DTO.response.TeamSpaceResponseDto;
 import memo.example.demo.domain.TeamMember;
 import memo.example.demo.domain.TeamSpace;
@@ -29,7 +30,6 @@ public class TeamSpaceService {
                 .name(request.getName())
                 .build();
         teamSpace = teamSpaceRepository.save(teamSpace);
-
         User user = userRepository.findById(userId).orElseThrow();
         TeamMember teamMember = TeamMember.builder()
                 .teamSpace(teamSpace)
@@ -37,7 +37,6 @@ public class TeamSpaceService {
                 .role(TeamMember.Role.LEADER)
                 .build();
         teamMemberRepository.save(teamMember);
-
         return teamSpace.getTeamSpaceId();
     }
 
@@ -54,6 +53,14 @@ public class TeamSpaceService {
                 .orElseThrow(() -> new IllegalArgumentException("팀 스페이스를 찾을 수 없습니다."));
         Integer memberCount = teamMemberRepository.findByTeamSpace_TeamSpaceId(teamSpaceId).size();
         return TeamSpaceResponseDto.from(teamSpace, memberCount);
+    }
+
+    public void updateTeamSpaceName(Long teamSpaceId, TeamSpaceRequestDto request) {
+        TeamSpace teamSpace = teamSpaceRepository.findById(teamSpaceId)
+                .orElseThrow(() -> new IllegalArgumentException("팀 스페이스를 찾을 수 없습니다."));
+        if (request.getName() != null && !request.getName().isBlank()) {
+            teamSpace.setName(request.getName());
+        }
     }
 
     public void deleteTeamSpace(Long teamSpaceId) {

@@ -10,18 +10,15 @@ import java.time.LocalDateTime;
 @Builder
 @Table(name = "memo")
 public class Memo {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "memo_id")
     private Long memoId;
 
-    // ★ FK: 작성자 (User 테이블 참조)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    // ★ FK: 소속 팀 (TeamSpace 테이블 참조, 개인 메모일 경우 null 허용)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "team_space_id")
     private TeamSpace teamSpace;
@@ -33,9 +30,11 @@ public class Memo {
     @Column(name = "m_title", length = 55, nullable = false)
     private String mTitle;
 
-
     @Column(name = "m_content", columnDefinition = "TEXT", nullable = false)
     private String mContent;
+
+    @Column(name = "m_rich_content", columnDefinition = "TEXT")
+    private String mRichContent;
 
     @Column(name = "is_pinned", nullable = false)
     @Builder.Default
@@ -65,6 +64,6 @@ public class Memo {
     }
 
     public enum MemoStatus {
-        NORMAL, FIRE, ICE, TRASH
+        FIRE, ICE // TRASH 삭제됨
     }
 }

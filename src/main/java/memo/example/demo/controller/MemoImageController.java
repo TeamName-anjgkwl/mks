@@ -12,13 +12,12 @@ import java.util.Map;
 @RequestMapping("/api/memos")
 @RequiredArgsConstructor
 public class MemoImageController {
-
     private final MemoImageService memoImageService;
 
     @PostMapping("/{memoId}/images")
     public ResponseEntity<?> addMemoImage(@PathVariable Long memoId, @RequestBody Map<String, String> request) {
-        memoImageService.addImageToMemo(memoId, request.get("imageUrl"));
-        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("imageId", 1L));
+        Long realImageId = memoImageService.addImageToMemo(memoId, request.get("imageUrl"));
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("imageId", realImageId));
     }
 
     @GetMapping("/{memoId}/images")
