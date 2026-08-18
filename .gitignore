@@ -35,3 +35,14 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Secrets ###
+*.pem
+*.key
+.env
+.env.*
+!.env.example
+src/main/resources/application-local.properties
+src/main/resources/application-prod.properties
+
+src/main/resources/application.properties

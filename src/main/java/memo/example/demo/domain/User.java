@@ -26,14 +26,12 @@ public class User {
     @Column(name = "password", length = 255)
     private String password;
 
-    // 추가됨: 사용자 실명
     @Column(name = "name", length = 55, nullable = false)
     private String name;
 
     @Column(name = "nickname", length = 10, nullable = false)
     private String nickname;
 
-    // 추가됨: 휴대폰 번호
     @Column(name = "phone_number", length = 20, unique = true)
     private String phoneNumber;
 
@@ -46,7 +44,6 @@ public class User {
     @Column(name = "profile_image_url", length = 1000)
     private String profileImageUrl;
 
-    // 추가됨: 환경 설정 필드들
     @Column(name = "timezone", length = 50, nullable = false)
     @Builder.Default
     private String timezone = "Asia/Seoul";
@@ -59,10 +56,14 @@ public class User {
     @Builder.Default
     private String language = "ko-KR";
 
-    // 추가됨: 2FA 사용 여부
     @Column(name = "use_2fa", nullable = false)
     @Builder.Default
     private Boolean use2fa = false;
+
+    // 추가됨: 2FA 인증 수단 (PHONE, EMAIL)
+    @Column(name = "two_factor_method", length = 10)
+    @Builder.Default
+    private String twoFactorMethod = "PHONE";
 
     @Column(name = "two_factor_secret", length = 255)
     private String twoFactorSecret;

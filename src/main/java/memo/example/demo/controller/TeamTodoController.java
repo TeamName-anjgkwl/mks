@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import memo.example.demo.DTO.request.TeamTodoRequestDto;
 import memo.example.demo.DTO.request.TeamTodoUpdateRequestDto;
 import memo.example.demo.DTO.response.MessageResponseDto;
+import memo.example.demo.config.jwt.LoginUser;
 import memo.example.demo.service.TeamTodoService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,13 +15,13 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class TeamTodoController {
     private final TeamTodoService teamTodoService;
-    private final Long CURRENT_USER_ID = 1L; // 임시 유저 ID
 
     @PostMapping("/team-spaces/{teamSpaceId}/todos")
     public ResponseEntity<MessageResponseDto> createTodo(
             @PathVariable Long teamSpaceId,
+            @LoginUser Long userId,
             @RequestBody TeamTodoRequestDto request) {
-        teamTodoService.createTodo(teamSpaceId, CURRENT_USER_ID, request);
+        teamTodoService.createTodo(teamSpaceId, userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(new MessageResponseDto("할 일 생성 완료"));
     }
 

@@ -2,6 +2,7 @@ package memo.example.demo.controller;
 
 import lombok.RequiredArgsConstructor;
 import memo.example.demo.DTO.response.MessageResponseDto;
+import memo.example.demo.config.jwt.LoginUser;
 import memo.example.demo.service.NotificationService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -11,11 +12,10 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class NotificationController {
     private final NotificationService notificationService;
-    private final Long CURRENT_USER_ID = 1L; // 임시 유저 ID
 
     @GetMapping
-    public ResponseEntity<?> getNotifications() {
-        return ResponseEntity.ok(notificationService.getUserNotifications(CURRENT_USER_ID));
+    public ResponseEntity<?> getNotifications(@LoginUser Long userId) {
+        return ResponseEntity.ok(notificationService.getUserNotifications(userId));
     }
 
     @PatchMapping("/{id}/read")

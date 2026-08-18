@@ -5,8 +5,10 @@ import memo.example.demo.DTO.response.FriendRequestResponseDto;
 import memo.example.demo.DTO.response.FriendResponseDto;
 import memo.example.demo.domain.Friend;
 import memo.example.demo.domain.Friend.FriendStatus;
+import memo.example.demo.domain.Notification;
 import memo.example.demo.domain.User;
 import memo.example.demo.repository.FriendRepository;
+import memo.example.demo.repository.NotificationRepository;
 import memo.example.demo.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,23 +24,58 @@ public class FriendService {
 
     private final FriendRepository friendRepository;
     private final UserRepository userRepository;
+    private final NotificationRepository notificationRepository;
 
-    public void sendFriendRequest(Long requesterId, Long receiverId) {
+    public Long sendFriendRequest(Long requesterId, Long receiverId) {
+        if (requesterId.equals(receiverId)) {
+            throw new IllegalArgumentException("자기 자신에게 친구 요청을 보낼 수 없습니다.");
+        }
+
+        List<Friend> requesters = friendRepository.findByRequester_UserId(requesterId);
+        boolean alreadySent = requesters.stream().anyMatch(f -> f.getReceiver().getUserId().equals(receiverId) && (f.getStatus() == FriendStatus.PENDING || f.getStatus() == FriendStatus.ACCEPTED));
+        if (alreadySent) {
+            throw new IllegalStateException("이미 대기 중이거나 수락된 친구 요청이 존재합니다.");
+        }
+
+        List<Friend> receivers = friendRepository.findByReceiver_UserId(requesterId);
+        boolean alreadyReceived = receivers.stream().anyMatch(f -> f.getRequester().getUserId().equals(receiverId) && (f.getStatus() == FriendStatus.PENDING || f.getStatus() == FriendStatus.ACCEPTED));
+        if (alreadyReceived) {
+            throw new IllegalStateException("이미 대기 중이거나 수락된 친구 요청이 존재합니다.");
+        }
+
         User requester = userRepository.findById(requesterId).orElseThrow();
         User receiver = userRepository.findById(receiverId).orElseThrow();
+
         Friend friend = Friend.builder()
                 .requester(requester)
                 .receiver(receiver)
                 .status(FriendStatus.PENDING)
                 .build();
-        friendRepository.save(friend);
+        friend = friendRepository.save(friend);
+
+        Notification notification = Notification.builder()
+                .user(receiver)
+                .type(Notification.NotificationType.FRIEND_REQUEST)
+                .targetId(friend.getRequestId())
+                .message("친구 요청이 도착했습니다.")
+                .build();
+        notificationRepository.save(notification);
+
+        return friend.getRequestId();
     }
 
     @Transactional(readOnly = true)
     public List<FriendRequestResponseDto> getPendingRequests(Long userId) {
-        return friendRepository.findAll().stream()
-                .filter(f -> f.getReceiver().getUserId().equals(userId) && f.getStatus() == FriendStatus.PENDING)
+        return friendRepository.findByReceiver_UserIdAndStatus(userId, FriendStatus.PENDING).stream()
                 .map(f -> FriendRequestResponseDto.from(f, f.getRequester().getNickname()))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<FriendRequestResponseDto> getSentRequests(Long userId) {
+        return friendRepository.findByRequester_UserId(userId).stream()
+                .filter(f -> f.getStatus() == FriendStatus.PENDING)
+                .map(f -> FriendRequestResponseDto.from(f, f.getReceiver().getNickname()))
                 .collect(Collectors.toList());
     }
 

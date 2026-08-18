@@ -3,27 +3,35 @@ package memo.example.demo.controller;
 import lombok.RequiredArgsConstructor;
 import memo.example.demo.DTO.response.DeviceResponseDto;
 import memo.example.demo.DTO.response.MessageResponseDto;
+import memo.example.demo.repository.DeviceRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/devices")
+@RequestMapping("/api/auth/devices")
 @RequiredArgsConstructor
 public class DeviceController {
 
-    // 1. 로그인된 기기 목록 조회
+    private final DeviceRepository deviceRepository;
+
     @GetMapping
     public ResponseEntity<?> getDevices() {
-        return ResponseEntity.ok(List.of(
-                DeviceResponseDto.builder().deviceId(1L).deviceName("iPhone 16 Pro").build()
-        ));
+        List<DeviceResponseDto> devices = deviceRepository.findAll().stream()
+                .map(d -> DeviceResponseDto.builder()
+                        .deviceId(d.getDeviceId())
+                        .deviceName(d.getDeviceName() != null ? d.getDeviceName() : "알 수 없는 기기") // 이제 에러 안 남!
+                        .lastLoginAt(d.getCreatedAt())
+                        .build())
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(devices);
     }
 
-    // 2. 특정 기기 강제 로그아웃 (연결 해제)
     @DeleteMapping("/{deviceId}")
     public ResponseEntity<MessageResponseDto> logoutDevice(@PathVariable Long deviceId) {
-        return ResponseEntity.ok(new MessageResponseDto("성공적으로 기기에서 로그아웃 되었습니다."));
+        deviceRepository.deleteById(deviceId);
+        return ResponseEntity.ok(new MessageResponseDto("해당 기기에서 로그아웃 되었습니다."));
     }
 }

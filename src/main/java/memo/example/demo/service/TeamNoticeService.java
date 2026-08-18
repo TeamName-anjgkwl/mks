@@ -3,9 +3,13 @@ package memo.example.demo.service;
 import lombok.RequiredArgsConstructor;
 import memo.example.demo.DTO.request.TeamNoticeRequestDto;
 import memo.example.demo.DTO.response.TeamNoticeResponseDto;
+import memo.example.demo.domain.Notification;
+import memo.example.demo.domain.TeamMember;
 import memo.example.demo.domain.TeamNotice;
 import memo.example.demo.domain.TeamSpace;
 import memo.example.demo.domain.User;
+import memo.example.demo.repository.NotificationRepository;
+import memo.example.demo.repository.TeamMemberRepository;
 import memo.example.demo.repository.TeamNoticeRepository;
 import memo.example.demo.repository.TeamSpaceRepository;
 import memo.example.demo.repository.UserRepository;
@@ -23,6 +27,8 @@ public class TeamNoticeService {
     private final TeamNoticeRepository teamNoticeRepository;
     private final TeamSpaceRepository teamSpaceRepository;
     private final UserRepository userRepository;
+    private final TeamMemberRepository teamMemberRepository;
+    private final NotificationRepository notificationRepository;
 
     public void createNotice(Long teamSpaceId, Long userId, TeamNoticeRequestDto request) {
         TeamSpace teamSpace = teamSpaceRepository.findById(teamSpaceId).orElseThrow();
@@ -35,8 +41,20 @@ public class TeamNoticeService {
                 .content(request.getContent())
                 .isPinned(request.getIsPinned() != null ? request.getIsPinned() : false)
                 .build();
-
         teamNoticeRepository.save(notice);
+
+        List<TeamMember> members = teamMemberRepository.findByTeamSpace_TeamSpaceId(teamSpaceId);
+        for (TeamMember member : members) {
+            if (!member.getUser().getUserId().equals(userId)) {
+                Notification notification = Notification.builder()
+                        .user(member.getUser())
+                        .type(Notification.NotificationType.TEAM_NOTICE)
+                        .targetId(notice.getNoticeId())
+                        .message("팀스페이스에 새로운 공지사항이 등록되었습니다.")
+                        .build();
+                notificationRepository.save(notification);
+            }
+        }
     }
 
     @Transactional(readOnly = true)
@@ -49,7 +67,7 @@ public class TeamNoticeService {
     @Transactional(readOnly = true)
     public TeamNoticeResponseDto getNoticeDetail(Long noticeId) {
         TeamNotice notice = teamNoticeRepository.findById(noticeId)
-                .orElseThrow(() -> new IllegalArgumentException("공지를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("공지사항을 찾을 수 없습니다."));
         return TeamNoticeResponseDto.from(notice);
     }
 

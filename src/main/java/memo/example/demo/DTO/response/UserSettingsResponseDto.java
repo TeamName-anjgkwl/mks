@@ -14,7 +14,11 @@ public class UserSettingsResponseDto {
     private Boolean allowPush;
     private Boolean allowEvent;
 
-    public static UserSettingsResponseDto from(User user) {
+    // 추가된 필드
+    private String twoFactorMethod;
+    private String twoFactorDestination;
+
+    public static UserSettingsResponseDto from(User user, String maskedDestination) {
         return UserSettingsResponseDto.builder()
                 .timezone(user.getTimezone())
                 .dateFormat(user.getDateFormat())
@@ -22,6 +26,8 @@ public class UserSettingsResponseDto {
                 .use2fa(user.getUse2fa())
                 .allowPush(user.getAllowPush())
                 .allowEvent(user.getAllowEvent())
+                .twoFactorMethod(user.getTwoFactorMethod())
+                .twoFactorDestination(maskedDestination)
                 .build();
     }
 }

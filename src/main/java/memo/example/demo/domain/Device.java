@@ -2,6 +2,7 @@ package memo.example.demo.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -21,7 +22,11 @@ public class Device {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    // 변경됨: 토큰 길이 1000으로 확장
+    // 기기 이름 (예: iPhone 16 Pro) 필드 추가!
+    @Column(name = "device_name", length = 100)
+    private String deviceName;
+
+    // 카카오/구글 소셜 로그인의 경우 최대 1000자까지 길어질 수 있음
     @Column(name = "refresh_token", length = 1000, nullable = false)
     private String refreshToken;
 

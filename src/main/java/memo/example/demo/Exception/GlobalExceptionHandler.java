@@ -21,6 +21,7 @@ public class GlobalExceptionHandler {
             String errorMessage = error.getDefaultMessage();
             errors.put(fieldName, errorMessage);
         });
+
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .code("INVALID_INPUT_VALUE")
                 .message("입력값이 올바르지 않습니다.")
@@ -39,21 +40,51 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
+    // 만료된 인증번호
+    @ExceptionHandler(ExpiredCodeException.class)
+    public ResponseEntity<ErrorResponse> handleExpiredCodeException(ExpiredCodeException ex) {
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .code("EXPIRED_AUTH_CODE")
+                .message(ex.getMessage())
+                .fieldErrors(null)
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    // 잘못된(틀린) 인증번호
+    @ExceptionHandler(InvalidCodeException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidCodeException(InvalidCodeException ex) {
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .code("INVALID_AUTH_CODE")
+                .message(ex.getMessage())
+                .fieldErrors(null)
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalStateException(IllegalStateException ex) {
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .code("CONFLICT")
+                .message(ex.getMessage())
+                .fieldErrors(null)
+                .build();
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+    }
+
     @ExceptionHandler(SecurityException.class)
     public ResponseEntity<ErrorResponse> handleSecurityException(SecurityException ex) {
         ErrorResponse errorResponse = ErrorResponse.builder()
-                .code("UNAUTHORIZED")
-                .message("인증이 필요하거나 권한이 없습니다.")
+                .code("FORBIDDEN")
+                .message("이 작업을 수행할 권한이 없습니다.")
                 .fieldErrors(null)
                 .build();
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleAllExceptions(Exception ex) {
-        // ★ EC2 서버 콘솔에 실제 에러 원인 출력
         ex.printStackTrace();
-
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .code("INTERNAL_SERVER_ERROR")
                 .message("서버 내부 오류가 발생했습니다.")

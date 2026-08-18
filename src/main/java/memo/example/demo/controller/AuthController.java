@@ -2,7 +2,10 @@ package memo.example.demo.controller;
 
 import lombok.RequiredArgsConstructor;
 import memo.example.demo.DTO.request.*;
-import memo.example.demo.DTO.response.*;
+import memo.example.demo.DTO.response.LoginResponseDto;
+import memo.example.demo.DTO.response.MessageResponseDto;
+import memo.example.demo.config.jwt.LoginUser;
+import memo.example.demo.service.AuthService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,34 +17,43 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AuthController {
 
+    private final AuthService authService;
+
     @PostMapping("/signup")
     public ResponseEntity<?> signup(@RequestBody SignUpRequestDto request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("userId", 1L));
+        Long userId = authService.signup(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("userId", userId));
     }
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDto> login(@RequestBody LoginRequestDto request) {
-        return ResponseEntity.ok(LoginResponseDto.builder()
-                .accessToken("access_token")
-                .refreshToken("refresh_token")
-                .userId(1L)
-                .deviceId(100L)
-                .build());
+        return ResponseEntity.ok(authService.login(request));
+    }
+
+    @PostMapping("/social-login")
+    public ResponseEntity<?> socialLogin(@RequestBody SocialLoginRequestDto request) {
+        return ResponseEntity.ok(authService.socialLogin(request));
     }
 
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshToken(@RequestBody TokenRefreshRequestDto request) {
-        return ResponseEntity.ok(Map.of("accessToken", "new_access_token"));
+        return ResponseEntity.ok(authService.refreshToken(request.getRefreshToken()));
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<MessageResponseDto> logout(@RequestParam(name = "type", defaultValue = "CURRENT") String type) {
-        return ResponseEntity.ok(new MessageResponseDto("성공적으로 로그아웃 되었습니다."));
+    public ResponseEntity<MessageResponseDto> logout(
+            @LoginUser Long userId,
+            @RequestParam(name = "type", defaultValue = "CURRENT") String type,
+            @RequestBody(required = false) Map<String, String> requestBody) {
+
+        String refreshToken = requestBody != null ? requestBody.get("refreshToken") : null;
+        authService.logout(userId, type, refreshToken);
+        return ResponseEntity.ok(new MessageResponseDto("로그아웃 완료"));
     }
 
     @PostMapping("/find")
     public ResponseEntity<?> findIdOrPw(@RequestBody FindIdPwRequestDto request) {
-        return ResponseEntity.ok(Map.of("loginId", "user_login_id"));
+        return ResponseEntity.ok(Map.of("loginId", authService.findLoginId(request)));
     }
 
     @PostMapping("/verify-password")
@@ -50,7 +62,11 @@ public class AuthController {
     }
 
     @PostMapping("/2fa")
-    public ResponseEntity<MessageResponseDto> handle2FA(@RequestBody TwoFactorRequestDto request) {
-        return ResponseEntity.ok(new MessageResponseDto("2FA 처리 성공"));
+    public ResponseEntity<?> handle2FA(@RequestBody TwoFactorRequestDto request) {
+        Object result = authService.handle2FA(request);
+        if (result instanceof LoginResponseDto) {
+            return ResponseEntity.ok(result);
+        }
+        return ResponseEntity.ok(new MessageResponseDto("2FA 인증 요청이 정상 처리되었습니다."));
     }
 }

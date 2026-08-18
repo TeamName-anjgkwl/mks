@@ -2,21 +2,22 @@ package memo.example.demo.controller;
 
 import lombok.RequiredArgsConstructor;
 import memo.example.demo.DTO.response.ServiceNoticeResponseDto;
+import memo.example.demo.repository.ServiceNoticeRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.time.LocalDateTime;
-import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/service-notices")
 @RequiredArgsConstructor
 public class ServiceNoticeController {
 
+    private final ServiceNoticeRepository serviceNoticeRepository;
+
     @GetMapping
     public ResponseEntity<?> getServiceNotices() {
-        return ResponseEntity.ok(List.of(
-                ServiceNoticeResponseDto.builder().noticeId(1L).title("v1.1 업데이트").createdAt(LocalDateTime.now()).build()
-        ));
+        return ResponseEntity.ok(serviceNoticeRepository.findAllByOrderByCreatedAtDesc().stream()
+                .map(ServiceNoticeResponseDto::from)
+                .collect(Collectors.toList()));
     }
 }

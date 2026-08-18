@@ -12,4 +12,5 @@ public class UserSettingsUpdateRequestDto {
     private Boolean use2fa;
     private Boolean allowPush;
     private Boolean allowEvent;
+    private String twoFactorMethod; // 추가됨
 }

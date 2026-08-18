@@ -1,7 +1,7 @@
 package memo.example.demo.service;
 
 import lombok.RequiredArgsConstructor;
-import memo.example.demo.controller.MemoImageController.*;
+import memo.example.demo.DTO.response.MemoImageResponseDto;
 import memo.example.demo.domain.Memo;
 import memo.example.demo.domain.MemoImage;
 import memo.example.demo.repository.MemoImageRepository;
@@ -16,29 +16,26 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional
 public class MemoImageService {
-
     private final MemoImageRepository memoImageRepository;
     private final MemoRepository memoRepository;
 
     public void addImageToMemo(Long memoId, String imageUrl) {
         Memo memo = memoRepository.findById(memoId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 메모입니다."));
-
+                .orElseThrow(() -> new IllegalArgumentException("메모를 찾을 수 없습니다."));
         MemoImage memoImage = MemoImage.builder()
                 .memo(memo)
                 .imageUrl(imageUrl)
                 .build();
-
         memoImageRepository.save(memoImage);
     }
 
     @Transactional(readOnly = true)
-    public List<MemoImageResponse> getImagesByMemo(Long memoId) {
+    public List<MemoImageResponseDto> getImagesByMemo(Long memoId) {
         return memoImageRepository.findByMemo_MemoId(memoId).stream()
-                .map(img -> new MemoImageResponse(
-                        img.getImageId(),
-                        img.getImageUrl()
-                ))
+                .map(img -> MemoImageResponseDto.builder()
+                        .imageId(img.getImageId())
+                        .imageUrl(img.getImageUrl())
+                        .build())
                 .collect(Collectors.toList());
     }
 

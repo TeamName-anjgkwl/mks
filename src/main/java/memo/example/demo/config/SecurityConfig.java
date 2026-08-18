@@ -2,6 +2,7 @@ package memo.example.demo.config;
 
 import lombok.RequiredArgsConstructor;
 import memo.example.demo.config.jwt.JwtAuthenticationFilter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -17,6 +18,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
+import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
@@ -24,6 +26,11 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+    private final CustomAccessDeniedHandler customAccessDeniedHandler;
+
+    @Value("${app.cors.allowed-origin-patterns:http://localhost:*}")
+    private String allowedOriginPatterns;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -38,8 +45,23 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(customAuthenticationEntryPoint)
+                        .accessDeniedHandler(customAccessDeniedHandler)
+                )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/api/files/presigned-url", "/api/service-notices/**").permitAll()
+                        // 수정됨: /api/auth/** 로 열어두면 logout, devices API 접근 시 서버 NPE(500) 발생. 정확한 URL만 개방
+                        .requestMatchers(
+                                "/api/auth/signup",
+                                "/api/auth/login",
+                                "/api/auth/social-login",
+                                "/api/auth/refresh",
+                                "/api/auth/find",
+                                "/api/auth/verify-password",
+                                "/api/auth/2fa",
+                                "/api/files/presigned-url",
+                                "/api/service-notices/**"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
@@ -49,18 +71,15 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // 프론트엔드 로컬, EC2 IP, 모바일 등 모든 접근 허용
-        configuration.setAllowedOriginPatterns(List.of(
-                "http://localhost:*",
-                "http://13.124.250.181:*",
-                "https://13.124.250.181:*",
-                "*"
-        ));
+        configuration.setAllowedOriginPatterns(Arrays.stream(allowedOriginPatterns.split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isEmpty())
+                .toList());
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true); // 헤더 토큰 전달 허용
+        configuration.setAllowCredentials(true);
         configuration.setExposedHeaders(List.of("Authorization", "Refresh-Token"));
-        configuration.setMaxAge(3600L); // Preflight 요청 캐싱 (1시간)
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

@@ -16,39 +16,27 @@ repositories {
 }
 
 dependencies {
-    // [1. Web & API]
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
-
-    // [2. Database]
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     runtimeOnly 'com.mysql:mysql-connector-j'
-
-    // [3. Security & Social Login]
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
-
-    // JWT 토큰 발급 및 검증용
     implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 
-    // [4. Developer Tools]
+    // [AWS S3 SDK 추가]
+    implementation 'com.amazonaws:aws-java-sdk-s3:1.12.715'
+
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
-
-    // [5. Test]
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
     testCompileOnly 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.projectlombok:lombok'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-
-    compileOnly 'org.projectlombok:lombok'
-
-    annotationProcessor 'org.projectlombok:lombok'
-
 }
 
 tasks.named('test') {

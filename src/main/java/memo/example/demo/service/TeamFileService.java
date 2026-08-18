@@ -12,6 +12,7 @@ import memo.example.demo.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -26,6 +27,7 @@ public class TeamFileService {
     public void saveFileInfo(Long teamSpaceId, Long userId, TeamFileRequestDto request) {
         TeamSpace teamSpace = teamSpaceRepository.findById(teamSpaceId).orElseThrow();
         User user = userRepository.findById(userId).orElseThrow();
+
         TeamFile teamFile = TeamFile.builder()
                 .teamSpace(teamSpace)
                 .user(user)
@@ -38,12 +40,15 @@ public class TeamFileService {
 
     @Transactional(readOnly = true)
     public List<TeamFileResponseDto> getTeamFiles(Long teamSpaceId) {
-        return teamFileRepository.findByTeamSpace_TeamSpaceId(teamSpaceId).stream()
+        List<TeamFile> files = teamFileRepository.findByTeamSpace_TeamSpaceId(teamSpaceId);
+        if (files == null || files.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return files.stream()
                 .map(TeamFileResponseDto::from)
                 .collect(Collectors.toList());
     }
 
-    // TODO 완벽 해결: 파일 이름 변경 구현
     public void renameFile(Long fileId, String newFileName) {
         TeamFile teamFile = teamFileRepository.findById(fileId)
                 .orElseThrow(() -> new IllegalArgumentException("파일을 찾을 수 없습니다."));

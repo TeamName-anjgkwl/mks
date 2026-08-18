@@ -12,6 +12,7 @@ import memo.example.demo.domain.User;
 import memo.example.demo.repository.MemoRepository;
 import memo.example.demo.repository.TeamSpaceRepository;
 import memo.example.demo.repository.UserRepository;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,19 +28,21 @@ public class MemoService {
     private final UserRepository userRepository;
     private final TeamSpaceRepository teamSpaceRepository;
 
-    public void createMemo(Long userId, MemoRequestDto request) {
+    public Long createMemo(Long userId, MemoRequestDto request) {
         User user = userRepository.findById(userId).orElseThrow();
         TeamSpace teamSpace = request.getTeamSpaceId() != null ?
                 teamSpaceRepository.findById(request.getTeamSpaceId()).orElse(null) : null;
+
         Memo memo = Memo.builder()
                 .user(user)
                 .teamSpace(teamSpace)
                 .status(request.getStatus() != null ? MemoStatus.valueOf(request.getStatus()) : MemoStatus.NORMAL)
                 .mTitle(request.getTitle())
                 .mContent(request.getContent())
-                .expiredAt(parseDateTimeSafe(request.getExpiredAt())) // ★ 안전한 파싱 적용
+                .expiredAt(parseDateTimeSafe(request.getExpiredAt()))
                 .build();
-        memoRepository.save(memo);
+
+        return memoRepository.save(memo).getMemoId();
     }
 
     @Transactional(readOnly = true)
@@ -98,10 +101,19 @@ public class MemoService {
         memoRepository.deleteAllById(memoIds);
     }
 
-    // ★ 프론트엔드 ISO-8601 방어용 파싱 유틸 메서드
     private LocalDateTime parseDateTimeSafe(String dateTimeStr) {
         if (dateTimeStr == null || dateTimeStr.isBlank()) return null;
         String cleaned = dateTimeStr.length() >= 19 ? dateTimeStr.substring(0, 19) : dateTimeStr;
         return LocalDateTime.parse(cleaned);
+    }
+
+    @Scheduled(cron = "0 * * * * *")
+    public void processExpiredMemos() {
+        LocalDateTime now = LocalDateTime.now();
+        int updatedCount = memoRepository.expireMemosToTrash(now, MemoStatus.TRASH);
+
+        if (updatedCount > 0) {
+            System.out.println("[Scheduler] " + updatedCount + "개의 불메모가 휴지통으로 자동 이동되었습니다. (" + now + ")");
+        }
     }
 }

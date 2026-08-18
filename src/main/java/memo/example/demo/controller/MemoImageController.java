@@ -6,37 +6,29 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/api/memo-images")
+@RequestMapping("/api/memos")
 @RequiredArgsConstructor
 public class MemoImageController {
 
     private final MemoImageService memoImageService;
 
-    // 1. 메모에 이미지 URL 등록
-    @PostMapping
-    public ResponseEntity<Void> addMemoImage(@RequestBody MemoImageRequest request) {
-        memoImageService.addImageToMemo(request.memoId(), request.imageUrl());
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+    @PostMapping("/{memoId}/images")
+    public ResponseEntity<?> addMemoImage(@PathVariable Long memoId, @RequestBody Map<String, String> request) {
+        memoImageService.addImageToMemo(memoId, request.get("imageUrl"));
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("imageId", 1L));
     }
 
-    // 2. 특정 메모의 이미지 목록 조회
-    @GetMapping("/memo/{memoId}")
-    public ResponseEntity<List<MemoImageResponse>> getMemoImages(@PathVariable Long memoId) {
-        List<MemoImageResponse> images = memoImageService.getImagesByMemo(memoId);
-        return ResponseEntity.ok(images);
+    @GetMapping("/{memoId}/images")
+    public ResponseEntity<?> getMemoImages(@PathVariable Long memoId) {
+        return ResponseEntity.ok(memoImageService.getImagesByMemo(memoId));
     }
 
-    // 3. 메모 이미지 개별 삭제
-    @DeleteMapping("/{imageId}")
+    @DeleteMapping("/images/{imageId}")
     public ResponseEntity<Void> deleteMemoImage(@PathVariable Long imageId) {
         memoImageService.deleteImage(imageId);
         return ResponseEntity.noContent().build();
     }
-
-    // --- DTO ---
-    public record MemoImageRequest(Long memoId, String imageUrl) {}
-    public record MemoImageResponse(Long imageId, String imageUrl) {}
 }

@@ -3,6 +3,7 @@ package memo.example.demo.controller;
 import lombok.RequiredArgsConstructor;
 import memo.example.demo.DTO.request.ScheduleRequestDto;
 import memo.example.demo.DTO.response.MessageResponseDto;
+import memo.example.demo.config.jwt.LoginUser;
 import memo.example.demo.service.ScheduleService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,25 +14,26 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class ScheduleController {
     private final ScheduleService scheduleService;
-    private final Long CURRENT_USER_ID = 1L; // 임시
 
     @PostMapping
-    public ResponseEntity<MessageResponseDto> createSchedule(@RequestBody ScheduleRequestDto request) {
-        scheduleService.createSchedule(CURRENT_USER_ID, request);
+    public ResponseEntity<MessageResponseDto> createSchedule(
+            @LoginUser Long userId,
+            @RequestBody ScheduleRequestDto request) {
+        scheduleService.createSchedule(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(new MessageResponseDto("일정 생성 완료"));
     }
 
     @GetMapping
     public ResponseEntity<?> getSchedules(
+            @LoginUser Long userId,
             @RequestParam(name = "year") int year,
             @RequestParam(name = "month") int month,
             @RequestParam(name = "teamSpaceId", required = false) Long teamSpaceId) {
 
-        // V10 명세에 맞춘 월별 일정 조회
         if (teamSpaceId != null) {
             return ResponseEntity.ok(scheduleService.getTeamSchedulesByMonth(teamSpaceId, year, month));
         }
-        return ResponseEntity.ok(scheduleService.getUserSchedulesByMonth(CURRENT_USER_ID, year, month));
+        return ResponseEntity.ok(scheduleService.getUserSchedulesByMonth(userId, year, month));
     }
 
     @GetMapping("/{scheduleId}")
