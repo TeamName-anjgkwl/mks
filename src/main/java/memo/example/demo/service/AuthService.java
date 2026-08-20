@@ -158,13 +158,20 @@ public class AuthService {
         if ("ALL".equalsIgnoreCase(type)) {
             deviceRepository.deleteByUser_UserId(userId);
         } else {
-            if (refreshToken != null) {
-                deviceRepository.findByRefreshToken(refreshToken)
-                        .ifPresent(device -> {
-                            if (device.getUser().getUserId().equals(userId)) {
-                                deviceRepository.delete(device);
-                            }
-                        });
+            // 1. 토큰이 아예 안 넘어온 경우 방어
+            if (refreshToken == null || refreshToken.isBlank()) {
+                throw new IllegalArgumentException("로그아웃할 리프레시 토큰이 전달되지 않았습니다.");
+            }
+
+            // 2. DB에 토큰이 없으면 (이미 로그아웃 된 상태면) 400 에러 던지기
+            Device device = deviceRepository.findByRefreshToken(refreshToken)
+                    .orElseThrow(() -> new IllegalArgumentException("이미 로그아웃(무효화)된 상태입니다."));
+
+            // 3. 본인 기기가 맞는지 검증 후 삭제
+            if (device.getUser().getUserId().equals(userId)) {
+                deviceRepository.delete(device);
+            } else {
+                throw new IllegalArgumentException("잘못된 접근입니다.");
             }
         }
     }

@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional
 public class TeamSpaceService {
+
     private final TeamSpaceRepository teamSpaceRepository;
     private final TeamMemberRepository teamMemberRepository;
     private final UserRepository userRepository;
@@ -43,6 +44,8 @@ public class TeamSpaceService {
     @Transactional(readOnly = true)
     public List<TeamSpaceResponseDto> getMyTeamSpaces(Long userId) {
         return teamMemberRepository.findByUser_UserId(userId).stream()
+                // ★ 삭제된 팀 스페이스는 목록에서 제외
+                .filter(tm -> tm.getTeamSpace().getDeletedAt() == null)
                 .map(tm -> TeamSpaceResponseDto.from(tm.getTeamSpace(), teamMemberRepository.findByTeamSpace_TeamSpaceId(tm.getTeamSpace().getTeamSpaceId()).size()))
                 .collect(Collectors.toList());
     }
@@ -51,6 +54,12 @@ public class TeamSpaceService {
     public TeamSpaceResponseDto getTeamSpace(Long teamSpaceId) {
         TeamSpace teamSpace = teamSpaceRepository.findById(teamSpaceId)
                 .orElseThrow(() -> new IllegalArgumentException("팀 스페이스를 찾을 수 없습니다."));
+
+        // ★ 삭제된 팀 스페이스 상세 조회 차단
+        if (teamSpace.getDeletedAt() != null) {
+            throw new IllegalArgumentException("삭제된 팀 스페이스입니다.");
+        }
+
         Integer memberCount = teamMemberRepository.findByTeamSpace_TeamSpaceId(teamSpaceId).size();
         return TeamSpaceResponseDto.from(teamSpace, memberCount);
     }
